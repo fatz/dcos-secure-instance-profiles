@@ -17,10 +17,10 @@ This process alone does not really change the authorization problem as still eve
 This PSK will allow us to use DC/OS Secrets acting as authorization instance for our application by placing an AssumeRole configuration including the external_id.
 
 ## Example
-This repository contains a [main.tf](./main.tf) with a example setup. You only need to place a DC/OS license in your Homefolder ( `$HOME/license.txt` ) and the public key file of the SSH-Key you've loaded into your ssh-agent at `~/.ssh/id_rsa.pub`. If these files are at different locations just edit the `main.tf` and change the path for your environment.
+[This repository](https://github.com/fatz/dcos-secure-instance-profiles) contains a [main.tf](./main.tf) with a example setup. You only need to place a DC/OS license in your Homefolder ( `$HOME/license.txt` ) and the public key file of the SSH-Key you've loaded into your ssh-agent at `~/.ssh/id_rsa.pub`. If these files are at different locations just edit the `main.tf` and change the path for your environment.
 
 ### Creating the cluster
-Once you've downloaded all the files of this repository ( `git clone ... && cd dcos-secure-instance-profiles` ) you need to initialize terraform and start creating the cluster
+Once you've downloaded all the files of this repository ( `git clone https://github.com/fatz/dcos-secure-instance-profiles && cd dcos-secure-instance-profiles` ) you need to initialize terraform and start creating the cluster
 
 Before you start creating the cluster make sure your AWS setup is finished and working. Either `$AWS_PROFILE` needs to be set to the profile you want to use or make sure you've properly setup your aws cli `aws configure`. To ensure you will use the expected account you can run `aws sts get-caller-identity` and see the account id you will be using.
 
