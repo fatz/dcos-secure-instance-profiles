@@ -1,28 +1,29 @@
 # Secure AWS Instance Profiles on DC/OS
-Security is always an important topic in today's distributed systems. With DC/OS Enterprise we offer a feature called DC/OS Secrets. With Secrets it is possible to inject secure information like passwords or cryptographic keys into your application. No other Application is able to read or change this information and with DC/OS IAM you can also strip down the group of users having access to this information.
+Security is always an important topic in today's distributed systems. With DC/OS Enterprise we offer a feature called DC/OS Secrets. With Secrets it is possible to inject secure information like passwords or cryptographic keys into your application. No other Application is able to read or change this information and with DC/OS IAM you can also strip down the group of users that have access to this information.
 
 ## The usual workflow
-Let's assume you have an application that wants to access AWS resources, like a S3 bucket. With Secrets you can easily create an IAM user and assign it a Policy which is able to access your particular bucket. You take the ACCESS_KEY and add it to your Marathon specification and store the SECRET_ACCESS_KEY into a DC/OS Secret in your default vault which you also specify in your marathon application. This is absolutely not bad but it means you have to rotate these credentials on a regular basis and therefore you need to update your application from time to time.
+Let's assume you have an application that wants to access AWS resources, like an S3 bucket. With [Secrets](https://docs.d2iq.com/mesosphere/dcos/1.13/security/ent/secrets/) you can easily create an IAM user and assign it a Policy which is able to access your particular bucket. You take the `ACCESS_KEY` and add it to your Marathon specification and store the `SECRET_ACCESS_KEY` into a DC/OS Secret in your default vault which you also specify in your Marathon application. This is not bad, but it means you must rotate these credentials on a regular basis and therefore you need to update your application from time to time.
 
 ## AWS Agents can do better
-If your agents are already running on AWS Instances there is a way better and best practise solution solving your problem: Instance Profiles. Instance profiles allow you to assign Roles to Instances. The AWS SDK will realise running on an AWS Instance and try to retrieve credentials from the AWS Metadata API. The huge benefit of this is you do not need to rotate credentials by yourself as AWS is taking care of it. These credentials will have a short live time so even if they get leaked a user will only have a certain amount of time to use those credentials.
+If your agents are already running on AWS Instances there is a way better and best practice solution solving your problem: Instance Profiles. [Instance profiles](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_switch-role-ec2_instance-profiles.html) allow you to assign Roles to Instances. The AWS SDK running on an AWS Instance will try to retrieve credentials from the [AWS Metadata API](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-metadata.html). The huge benefit of this is that you do not need to rotate credentials by yourself as AWS is takes care of it. These credentials will have a short lifetime, so even if they get leaked a user will only have a certain amount of time to use those credentials.
 
 ## Not every task should have this privilege
-In DC/OS multiple applications will share the same agent and therefore share the same instance profile. This is something you might want to avoid. With the initially described process you only hand out the users credentials to the applications you’ve selected, so you decide based on the secret containing the credentials which application gets the creds.
+On DC/OS multiple applications will share the same agent and therefore share the same instance profile. This is something that you should avoid. In the initially described process you only hand out the users credentials to the applications that you’ve selected, so you decide based on the secret containing the credentials which application gets the credentials.
 
 ## AssumeRole and external_id
-We can combine the security of instance profiles with the selective authorization of DC/OS secrets. AWS offers a process called AssumeRole. With this a Role (Instance,User) is able to retrieve temporary credentials for another role ( even other accounts are possible ).
-So in our example the Instance would Assume into the Role having access to the S3 bucket.
-This process alone does not really change the authorization problem as still every application would be able to use it but AWS gives an additional layer of security to this procedure: external_id. The external_id is a pre-shared-key added to the trust relationship of a role which allows us to assume into it.
-This PSK will allow us to use DC/OS Secrets acting as authorization instance for our application by placing an AssumeRole configuration including the external_id.
+We can combine the security of instance profiles with the selective authorization of DC/OS secrets. AWS offers a process called [AssumeRole](https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html). With this a Role (Instance,User) is able to retrieve temporary credentials for another role (even in other AWS accounts).
+So in our example, the Instance would Assume a Role that has access to the S3 bucket.
+This process alone does not really change the authorization problem as every application would still be able to use it but AWS gives an additional layer of security to this procedure called: [external_id](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-user_externalid.html). The external_id is a pre-shared-key added to the trust relationship of a role which allows us to assume this role.
+This PSK will allow us to use DC/OS Secrets acting as an authorization instance for our application by placing an AssumeRole configuration that includes the external_id.
 
 ## Example
-[This repository](https://github.com/fatz/dcos-secure-instance-profiles) contains a [main.tf](./main.tf) with a example setup. You only need to place a DC/OS license in your Homefolder ( `$HOME/license.txt` ) and the public key file of the SSH-Key you've loaded into your ssh-agent at `~/.ssh/id_rsa.pub`. If these files are at different locations just edit the `main.tf` and change the path for your environment.
+[This repository](https://github.com/fatz/dcos-secure-instance-profiles) contains a [main.tf](./main.tf) with an example setup. You only need to place a DC/OS license in your Homefolder ( `$HOME/license.txt` ) and the public key file of the SSH-Key you've loaded into your ssh-agent at `~/.ssh/id_rsa.pub`. If these files are at different locations just edit the `main.tf` and change the path for your environment.
 
 ### Creating the cluster
-Once you've downloaded all the files of this repository ( `git clone https://github.com/fatz/dcos-secure-instance-profiles && cd dcos-secure-instance-profiles` ) you need to initialize terraform and start creating the cluster
+Once you've downloaded all the files of this repository ( `git clone https://github.com/fatz/dcos-secure-instance-profiles && cd dcos-secure-instance-profiles` ) you will need to initialize terraform and start creating the cluster.
 
-Before you start creating the cluster make sure your AWS setup is finished and working. Either `$AWS_PROFILE` needs to be set to the profile you want to use or make sure you've properly setup your aws cli `aws configure`. To ensure you will use the expected account you can run `aws sts get-caller-identity` and see the account id you will be using.
+Before you start creating the cluster make sure your AWS setup is finished and working. Either `$AWS_PROFILE` needs to be set to the profile you want to use or make sure that you've properly setup your aws cli `aws configure`. To ensure you are using the correct account you should run `aws sts get-caller-identity` and see the account id you that will be using.
+
 
 ```bash
 terraform init -upgrade .
@@ -62,7 +63,7 @@ dcos security secrets create /instance-profile-app/aws-config -v "$(terraform ou
 ```
 
 ### Install marathon-lb
-To access our app lets install marathon-lb. As we’re running strict mode we’ve to create a service-account and a service-account-secret
+To access our app let's install marathon-lb. As we’re running strict mode we have to create a service-account and a service-account-secret
 
 #### Prepare service account and secret
 
@@ -80,33 +81,35 @@ echo '{"marathon-lb": {"secret_name": "marathon-lb/service-account-secret","mara
 ```
 
 ### Deploy the marathon app
-The last step is to finally deploy our simple app using the bucket we prepared. We’re using the template given in our terraform file. You can simply review it using terraform output marathon_app_definition.
+The last step is to finally deploy our simple app using the bucket that we've prepared. We’re using the template given in our terraform file. You can review it simply by using the terraform output marathon_app_definition.
 
 ```bash
 terraform output marathon_app_definition | dcos marathon app add
 ```
 
-Lets wait for the app to become healthy
+Let's wait for the app to become healthy
 
 ```bash
 until dcos marathon app show /instance-profile-app | jq -e .tasksHealthy==1 >/dev/null; do echo "waiting for app becoming healthy" && sleep 10;done
 ```
 
 ## Using the app
-Once the app is healthy we can post data with curl to it.
+Once the app is healthy we can post data to it with curl.
 
 ```bash
 echo "foobar" | curl --user testuser:password -X POST -H "Host: binapp.mesosphere.com" -d @- $(terraform output public-agents-loadbalancer)/bin
 ```
 
-This app is creating an ID for the posted content. With this ID its storing the content into the specified bucket. So we can now use the aws-cli to see if it worked for us. Please replace <id returned by the post> in the URL with the id you received from the command above.
+This app is creating an ID for the posted content. With this ID it is storing the content into the specified bucket. So we can now use the aws-cli to see if it has worked for us. Please replace in the URL with the id you received from the command above.
 
 ```bash
 aws s3 cp s3://$(terraform output s3_bucket_name)/bin/<id returned by the post> -
 ```
 
-You see that there is a file in the s3 bucket and its content is the one we posted above.
+You can see that there is a file in the s3 bucket and its content is the one we posted above.
 
-All this is based on Instance Profile and AssumeRole without any static credentials but the external_id which only works in combination the the Account and Role of our DC/OS cluster.
 
-You can tinker around with this technique and its even more valuable if you're running an AWS multi-account setup.
+
+All of this is based on Instance Profile and AssumeRole without any static credentials but the external_id which only works in combination the the Account and Role of our DC/OS cluster.
+
+You can tinker around with this technique and it's even more valuable if you're running an AWS multi-account setup.
