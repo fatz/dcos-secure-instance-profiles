@@ -11,8 +11,9 @@
     "BINAPP_PASS": "password"
   },
   "labels": {
-    "HAPROXY_GROUP":"external",
-    "HAPROXY_0_VHOST":"binapp.mesosphere.com"
+    "edgelb.expose": "true",
+    "edgelb.template": "default",
+    "edgelb.first.frontend.rules": "hostEq:binapp.mesosphere.com"
   },
   "id": "/instance-profile-app",
   "backoffFactor": 1.15,
@@ -25,7 +26,7 @@
         "hostPort": 0,
         "protocol": "tcp",
         "servicePort": 10101,
-        "name": "http"
+        "name": "s3apphttp"
       }
     ],
     "type": "DOCKER",

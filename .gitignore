@@ -7,3 +7,7 @@
 
 # .tfvars files
 *.tfvars
+
+# ignore the generated keys
+edge-lb-private-key.pem
+edge-lb-public-key.pem

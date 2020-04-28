@@ -33,7 +33,7 @@ module "dcos" {
 
   dcos_variant              = "ee"
   dcos_security             = "strict"
-  dcos_version              = "2.0.1"
+  dcos_version              = "2.0.3"
   dcos_license_key_contents = "${file("~/license.txt")}"
 
   # provide a SHA512 hashed password, here "deleteme"

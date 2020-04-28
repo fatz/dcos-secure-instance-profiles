@@ -62,22 +62,25 @@ We already prepared the aws config for the application in our `main.tf`. Next we
 dcos security secrets create /instance-profile-app/aws-config -v "$(terraform output secret_aws_conf)"
 ```
 
-### Install marathon-lb
-To access our app let's install marathon-lb. As we’re running strict mode we have to create a service-account and a service-account-secret
+### Install EdgeLB
+To access our app let's install EdgeLB. As we’re running strict mode we have to create a service-account and a service-account-secret
 
 #### Prepare service account and secret
 
 ```bash
-dcos security org service-accounts keypair mlb-private-key.pem mlb-public-key.pem
-dcos security org service-accounts create -p mlb-public-key.pem -d "Marathon-LB service account" marathon-lb-sa
-dcos security secrets create-sa-secret --strict mlb-private-key.pem marathon-lb-sa marathon-lb/service-account-secret
-dcos security org users grant marathon-lb-sa dcos:service:marathon:marathon:services:/ read
-dcos security org users grant marathon-lb-sa dcos:service:marathon:marathon:admin:events read --description "Allows access to Marathon events"
+dcos security org service-accounts keypair edge-lb-private-key.pem edge-lb-public-key.pem
+dcos security org service-accounts create -p edge-lb-public-key.pem -d "Edge-LB service account" edge-lb-principal
+dcos security secrets create-sa-secret --strict edge-lb-private-key.pem edge-lb-principal dcos-edgelb/edge-lb-secret
+dcos security org groups add_user superusers edge-lb-principal
 ```
 
-#### Install marathon-lb
+#### Install and configure EdgeLB
 ```bash
-echo '{"marathon-lb": {"secret_name": "marathon-lb/service-account-secret","marathon-uri": "https://marathon.mesos:8443"}}' | dcos package install marathon-lb --options=/dev/stdin --yes
+echo '{"service": {"secretName": "dcos-edgelb/edge-lb-secret","principal": "edge-lb-principal","mesosProtocol": "https"}}' | dcos package install edgelb --options=/dev/stdin --yes
+```
+
+```bash
+until dcos edgelb ping; do sleep 1; done
 ```
 
 ### Deploy the marathon app
@@ -87,7 +90,12 @@ The last step is to finally deploy our simple app using the bucket that we've pr
 terraform output marathon_app_definition | dcos marathon app add
 ```
 
-Let's wait for the app to become healthy
+As we are using [EdgeLB AutoPool](http://docs-review.mesosphere.com/mesosphere/dcos/services/edge-lb/1.5/tutorials/auto-pools/) feature lets wait for the pool to come up:
+```bash
+until dcos edgelb status auto-default; do sleep 1; done
+```
+
+Let's ensure our app became healthy meanwhile:
 
 ```bash
 until dcos marathon app show /instance-profile-app | jq -e .tasksHealthy==1 >/dev/null; do echo "waiting for app becoming healthy" && sleep 10;done
