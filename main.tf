@@ -7,6 +7,7 @@ data "http" "whatismyip" {
 
 # lets create a random string for unique cluster and bucket name
 resource "random_string" "cluster" {
+  upper   = false
   length  = 4
   special = false
 }
