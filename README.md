@@ -17,7 +17,7 @@ This process alone does not really change the authorization problem as every app
 This PSK will allow us to use DC/OS Secrets acting as an authorization instance for our application by placing an AssumeRole configuration that includes the external_id.
 
 ## Example
-[This repository](https://github.com/fatz/dcos-secure-instance-profiles) contains a [main.tf](./main.tf) with an example setup. You only need to place a DC/OS license in your Homefolder ( `$HOME/license.txt` ) and the public key file of the SSH-Key you've loaded into your ssh-agent at `~/.ssh/id_rsa.pub`. If these files are at different locations just edit the `main.tf` and change the path for your environment.
+[This repository](https://github.com/fatz/dcos-secure-instance-profiles) contains a [main.tf](https://github.com/fatz/dcos-secure-instance-profiles/blob/master/main.tf) with an example setup. You only need to place a DC/OS license in your Homefolder ( `$HOME/license.txt` ) and the public key file of the SSH-Key you've loaded into your ssh-agent at `~/.ssh/id_rsa.pub`. If these files are at different locations just edit the `main.tf` and change the path for your environment.
 
 ### Creating the cluster
 Once you've downloaded all the files of this repository ( `git clone https://github.com/fatz/dcos-secure-instance-profiles && cd dcos-secure-instance-profiles` ) you will need to initialize terraform and start creating the cluster.
