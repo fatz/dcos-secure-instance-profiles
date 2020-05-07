@@ -1,5 +1,5 @@
 # Secure AWS Instance Profiles on DC/OS
-Security is always an important topic in today's distributed systems. With DC/OS Enterprise, we offer a feature called DC/OS Secrets, which makes it possible to inject secure information like passwords or cryptographic keys into your application. No other application is able to read or change this information, and with DC/OS Identity and Access Management ( IAM ) you can also restrict the group of users that have access to this information.
+Security is always an important topic in today's distributed systems. With DC/OS Enterprise, we offer a feature called DC/OS Secrets, which makes it possible to inject secure information like passwords or cryptographic keys into your application. No other application is able to read or change this information, and with DC/OS Identity and Access Management (IAM) you can also restrict the group of users that have access to this information.
 
 ## The usual workflow
 Let's assume you have an application that wants to access AWS resources, like an S3 bucket. With [Secrets](https://docs.d2iq.com/mesosphere/dcos/1.13/security/ent/secrets/), you can easily create an IAM user and assign it a Policy which is able to access your particular bucket. You take the `ACCESS_KEY` and add it to your Marathon specification, then store the `SECRET_ACCESS_KEY` into a DC/OS Secret in your default vault which you also specify in your Marathon application. This practice is not bad, but it means you must rotate these credentials on a regular basis and therefore you need to update your application from time to time.
@@ -21,6 +21,7 @@ Once you've downloaded all the files of this repository ( `git clone https://git
 
 Before you start creating the cluster, make sure your AWS setup is finished and working. Either `$AWS_PROFILE` needs to be set to the profile you want to use or make sure that you've properly set up your aws cli `aws configure`. To ensure you are using the correct account, you should run `aws sts get-caller-identity` and see the account id that you will be using.
 
+**Be aware**, this repository is using [Universal Installer](https://docs.d2iq.com/mesosphere/dcos/2.0/installing/evaluation/aws/) to install DC/OS. At the moment you can only use [Terraform 0.11.x](https://releases.hashicorp.com/terraform/). Check the [DC/OS Documentation for install instructions](https://docs.d2iq.com/mesosphere/dcos/2.0/installing/evaluation/aws/#install-terraform).
 
 ```bash
 terraform init -upgrade .
@@ -34,6 +35,9 @@ terraform apply
 brew install dcos-cli
 
 # on linux
+curl https://downloads.dcos.io/cli/releases/binaries/dcos/linux/x86-64/latest/dcos -o dcos
+chmod +x ./dcos
+sudo mv dcos /usr/local/bin
 
 ```
 
